@@ -1,5 +1,9 @@
 <?php
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+
 include_once 'db_con.php';
 
 
@@ -144,10 +148,44 @@ if (isset($_POST['cedula']) && isset($_POST['cantidad']) && isset($_POST['densid
 				$pdf->Cell(40,10,$row['Mucina'],0,0,'C');
 				$pdf->Cell(40,10,'Levaduras:',0,0,'C');
 				$pdf->Cell(40,10,$row['Levaduras'],0,1,'C');
+				
+				$correito = $row['Correo'];
 			}
 
 			$pdf->Output('F', 'examen1'.$Cedula.'.pdf');
-			echo "Procesado Correctamente";	
+			
+			require $_SERVER['DOCUMENT_ROOT'] . '/mail/Exception.php';
+            require $_SERVER['DOCUMENT_ROOT'] . '/mail/PHPMailer.php';
+            require $_SERVER['DOCUMENT_ROOT'] . '/mail/SMTP.php';
+
+            $mail = new PHPMailer;
+            $mail->isSMTP(); 
+            $mail->SMTPDebug = 0; // 0 = off (for production use) - 1 = client messages - 2 = client and server messages
+            $mail->Host = "smtp.gmail.com"; // use $mail->Host = gethostbyname('smtp.gmail.com'); // if your network does not support SMTP over IPv6
+            $mail->Port = 587; // TLS only
+            $mail->SMTPSecure = 'tls'; // ssl is deprecated
+            $mail->SMTPAuth = true;
+            $mail->Username = 'moisesdbvproyectophp@gmail.com'; // email
+            $mail->Password = ''; // password
+            $mail->setFrom('moisesdbvproyectophp@gmail.com', 'MoiLab'); // From email and name
+            $mail->addAddress($correito, 'Paciente'); // to email and name
+            $mail->Subject = 'Resultados de su Examen de Orina';
+            $mail->msgHTML("Resultados"); //$mail->msgHTML(file_get_contents('contents.html'), __DIR__); //Read an HTML message body from an external file, convert referenced images to embedded,
+            $mail->AltBody = 'HTML messaging not supported'; // If html emails is not supported by the receiver, show this body
+            // $mail->addAttachment('images/phpmailer_mini.png'); //Attach an image file
+            $mail->AddAttachment("examen1".$Cedula.".pdf");
+            $mail->SMTPOptions = array(
+                        'ssl' => array(
+                        '   verify_peer' => false,
+                            'verify_peer_name' => false,
+                            'allow_self_signed' => true
+                        )
+                    );
+            if(!$mail->send()){
+                echo "Mailer Error: " . $mail->ErrorInfo;
+            }else{
+                echo "Procesado Correctamente";
+            }	
 		} else {
 			echo "<script>alert('Verifique que el paciente tenga una solicitud pendiente')</script>";
 		}
